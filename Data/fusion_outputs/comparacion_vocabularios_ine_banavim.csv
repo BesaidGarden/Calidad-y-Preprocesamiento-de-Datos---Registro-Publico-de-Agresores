@@ -1,0 +1,5 @@
+﻿campo,unicos_ine,unicos_banavim,coincidentes,solo_ine,solo_banavim,pct_ine_cubierto,pct_banavim_cubierto
+sexo,2,2,2,0,0,100.0,100.0
+estado,18,32,18,0,14,100.0,56.25
+municipio,59,1945,52,7,1893,88.14,2.67
+vinculo_grupo,5,8,4,1,4,80.0,50.0
