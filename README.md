@@ -1,5 +1,7 @@
 # Calidad y Preprocesamiento de Datos - Registro Público de Agresores
 
+---
+
 ## Objetivos
 Integrar y vincular los registros de agresores del INE y BANAVIM (2020–2022) mediante limpieza, consolidación por individuo (Golden Record) y dos
 estrategias de record linkage para producir:
@@ -22,6 +24,14 @@ estrategias de record linkage para producir:
   - scikit-learn
   - openpyxl
   - requests
+
+## Equipo
+
+* Castrillo Cruz Karen Arlet
+* Pérez Aguiar Oropeza Gabriel Emiliano
+* Ramos González Nadia
+* Rueda Reyes Fabián
+* Torres Pasión Angel Isaac
 
 ## Estructura
 
@@ -69,4 +79,6 @@ Los notebooks deben ejecutarse en orden: `perfilado.ipynb` → `limpieza.ipynb` 
 
 **Presentación del proyecto (Canva):** <https://www.canva.com/design/DAHKiNaOcwE/jFqs8YRy3IOL6kK3_En9Hg/>
 
-**Reporte del proyecto (Overleaf / LaTeX):** <https://www.overleaf.com/project/6a1337b580bb716e3cdc5af5>
+**Reporte del proyecto:** <https://www.overleaf.com/project/6a1337b580bb716e3cdc5af5>
+
+--- 
