@@ -1,13 +1,17 @@
-# Documentación del notebook: Calidad y Preprocesamiento de Datos
+# Documentación del proyecto: Calidad y Preprocesamiento de Datos
 
-Resumen y guía corta sobre qué hace cada bloque del notebook y las salidas generadas.
+Resumen y guía corta sobre qué hace cada notebook, qué decisiones metodológicas se tomaron y qué salidas se generan.
 
 ## Objetivo
-Producir una versión limpia, normalizada y deduplicada del Registro Nacional de Personas Sancionadas (INE) y enriquecerlo con información auxiliar de BANAVIM para generar perfiles municipales integrados.
+
+Producir una versión limpia, normalizada y trazable del Registro Nacional de Personas Sancionadas del INE y preparar una vinculación exploratoria con BANAVIM.
+
+El objetivo de la vinculación no es afirmar identidad absoluta entre registros, sino generar pares candidatos compatibles entre ambas fuentes a partir de campos normalizados y auditados. Dado que las fuentes no comparten un identificador único y BANAVIM no contiene nombre del agresor, los resultados de record linkage deben interpretarse como candidatos para revisión, no como matches definitivos.
 
 ## Requisitos
+
 - Python 3.8+
-- Paquetes (instalar en el notebook o entorno):
+- Paquetes utilizados o requeridos por los notebooks:
   - recordlinkage
   - fuzzywuzzy
   - python-Levenshtein
@@ -17,93 +21,302 @@ Producir una versión limpia, normalizada y deduplicada del Registro Nacional de
   - ydata-profiling
   - ftfy
   - pandas, numpy, matplotlib, seaborn
+  - requests
 
 Instalación rápida (ejemplo):
 
 ```bash
-pip install recordlinkage fuzzywuzzy python-Levenshtein jellyfish unidecode networkx ydata-profiling ftfy
+pip install recordlinkage fuzzywuzzy python-Levenshtein jellyfish unidecode networkx ydata-profiling ftfy requests
 ```
 
-## Estructura y qué hace cada bloque
+## Notebooks principales
 
-0) Bibliotecas
-- Instala (opcional) y importa librerías necesarias para procesamiento, perfilado y vinculación.
+### `Código/agresores_record_linkage.ipynb`
 
-1) Ingesta de datos
-- Lee `df_ine_raw` desde un Excel del INE y las hojas `AGRESORES YYYY` de BANAVIM.
-- Función `leer_banavim_agresores()` normaliza el header real de las hojas AGRESORES.
+Notebook principal de ingesta, limpieza, perfilado, normalización, consolidación del INE y preparación de bases canónicas para fusión.
 
-2) Análisis exploratorio (EDA)
-- Calcula completitud por campo, analiza duplicados exactos por `Nombre`, parsea fechas, extrae etiquetas XML de `Tipo de violencia` y muestra distribuciones básicas.
-- Propósito: diagnóstico sin alterar las fuentes.
+### `Código/fusion_individuos.ipynb`
 
-3) Limpieza y normalización (INE)
-- Funciones clave:
-  - `normalizar_nombre()`: lowercase, sin acentos, sin puntuación, espacios colapsados (retorna None para vacíos).
-  - `nombre_canonico()`: tokens ordenados (útil para bloqueo exacto).
-  - `normalizar_estado()`: normaliza entidades usando `MAPA_ESTADOS`.
-  - `parsear_fecha()`: convierte múltiples formatos a datetime; 'Indeterminada' -> NaT.
-  - `extraer_xml_lista()`: extrae valores entre etiquetas `<element>`.
-- Crea `ine` con columnas derivadas: `nombre`, `entidad`, `fecha_resolucion`, `permanencia_fecha`, `tipo_violencia`, `medidas_reparacion`.
-- Filtra `ine` a resoluciones 2020–2022 y elimina columnas con <20% completitud.
-
-4) Limpieza BANAVIM
-- `limpiar_bv_agresores()` normaliza columnas relevantes (estado, municipio, sexo, edad, escolaridad, fecha_registro) y convierte flags de drogas/armas a numéricos.
-- Concatenación de años en `bv`.
-
-5) Consolidación (golden) — INE
-- Agrupa por `Nombre` y utiliza `consolidar_persona()` para producir un registro por persona con:
-  - Campos invariantes (moda / valor más largo en empate).
-  - Campos por incidencia: listas ordenadas por `fecha_resolucion` (conducta, sanción, expediente, fechas).
-  - Derivados: `n_incidencias`, `es_reincidente`.
-- Resultado: `df_golden`.
-
-6) Reparación de codificación (BANAVIM)
-- Detecta mojibake (caracteres de codificación rota) y aplica `ftfy.fix_text` en `reparar_codificacion()`.
-- Resultado: `bv_fix` con texto corregido y reporte antes/después.
-
-7) Perfilado y preparación para fusión
-- Perfilado de campos categóricos candidatos (`sexo`, `estado`, `municipio`, `vinculo_victima`).
-- Funciones de normalización para fusión:
-  - `normalizar_categoria_fusion()` y `normalizar_sexo_fusion()` para crear campos canónicos.
-- Crea `ine_fusion` y `bv_fusion` (versiones reducidas y canónicas con `id_ine_caso` / `id_bv_caso`).
-
-8) Homologación semántica de `vinculo_victima`
-- Mapas `MAPA_VINCULO_INE` y `MAPA_VINCULO_BANAVIM` que agrupan variantes textuales en categorías (PAREJA_EXPAREJA, FAMILIAR, PARES, INSTITUCIONAL_POLITICA, etc.).
-- Función `homologar_vinculo()` asigna `MISSING` o `REVISAR` según corresponda; se itera el mapa para reducir `REVISAR`.
-
-9) Ajustes finales de catálogo
-- Funciones `limpiar_sexo_final()` y `limpiar_estado_final()` homologan valores residuales y placeholders a `NaN` o catálogos canónicos.
-
-10) Vinculación (Record Linkage) — Sorted Neighbourhood Method (SNM)
-- Indexación por `municipio` con ventana (`window=3`) para generar pares candidatos.
-- Comparador con:
-  - similitud jarowinkler en `municipio` (threshold 0.85),
-  - match exacto en `vinculo_grupo`,
-  - match exacto en `sexo`.
-- Se suma la puntuación (`score`) y se filtran pares con `score >= 2.5`.
-- `matches_full` es el dataset enriquecido con columnas de ambas fuentes.
-- `perfil_municipal`: agregación por `municipio`, `estado`, `vinculo_grupo` con estadísticas (n sanciones INE, n casos BANAVIM, edad media, % portaba arma, % alcohol).
-
-## Salidas generadas (paths relativos usados en el notebook)
-- `../Data/ine_incidencias_2020_2022.csv` — INE limpio y recortado.
-- `../Data/banavim_fix_2020_2022.csv` — BANAVIM con texto corregido.
-- `../Data/fusion_outputs/ine_fusion_2020_2022.csv` — INE canónico para fusión.
-- `../Data/fusion_outputs/banavim_fusion_2020_2022.csv.gz` — BANAVIM canónico (comprimido).
-- `../Data/fusion_outputs/matches_snm.csv` — pares vinculados (SNM).
-- `../Data/fusion_outputs/perfil_municipal_integrado.csv` — perfiles municipales agregados.
-- Auditorías y CSVs de perfilado en `../Data/fusion_outputs/`.
-
-## Notas importantes y supuestos
-- Muchas funciones retornan `None` / `NaN` / `NaT` para preservar semántica de faltantes (no usar cadenas vacías).
-- Consolidación por `Nombre` asume que el mismo texto identifica a la misma persona (riesgo de homónimos).
-- La vinculación no prueba identidad absoluta; es una unión por similitud y contexto municipal.
-
-## Próximos pasos sugeridos
-- Ejecutar validación manual de una muestra de `matches_snm.csv` para verificar falsos positivos.
-- Aplicar blocking difuso por `nombre_canonico` y usar comparadores string más ricos si se desea unir por identidad real.
-- Versionar y commitear los CSVs de salida.
+Notebook de fusión/record linkage. Parte de las bases ya preparadas (`ine_fusion` y `bv_fusion`) y construye escenarios de matching por nivel de confianza, validación geográfica contra INEGI y generación de pares candidatos.
 
 ---
-Generado automáticamente como documentación del notebook.
-# Calidad-y-Preprocesamiento-de-Datos---Registro-Publico-de-Agresores
+
+## Estructura del notebook principal
+
+### 0) Bibliotecas
+
+- Instala e importa librerías necesarias para procesamiento, perfilado, reparación de codificación, normalización y vinculación.
+
+### 1) Ingesta de datos
+
+- Lee `df_ine_raw` desde un Excel del INE.
+- Lee hojas `AGRESORES YYYY` de BANAVIM.
+- La función `leer_banavim_agresores()` normaliza el encabezado real de las hojas AGRESORES.
+
+### 2) Análisis exploratorio inicial
+
+- Calcula completitud por campo.
+- Analiza duplicados exactos por `Nombre`.
+- Parsea fechas.
+- Extrae etiquetas XML de campos como `Tipo de violencia`.
+- Muestra distribuciones básicas.
+- Propósito: diagnosticar sin alterar las fuentes originales.
+
+### 3) Limpieza y normalización del INE
+
+Funciones clave:
+
+- `normalizar_nombre()`: normaliza nombres a minúsculas, sin acentos, sin puntuación y con espacios colapsados.
+- `nombre_canonico()`: ordena tokens del nombre para apoyar comparaciones.
+- `normalizar_estado()`: homologa entidades federativas usando un mapa de estados.
+- `parsear_fecha()`: convierte múltiples formatos a datetime.
+- `extraer_xml_lista()`: extrae valores desde etiquetas XML.
+
+Resultados principales:
+
+- Base `ine` con columnas derivadas:
+  - `nombre`
+  - `entidad`
+  - `fecha_resolucion`
+  - `permanencia_fecha`
+  - `tipo_violencia`
+  - `medidas_reparacion`
+- Filtro temporal a resoluciones de 2020 a 2022.
+- Eliminación de columnas con baja completitud cuando corresponde.
+
+### 4) Limpieza BANAVIM
+
+- `limpiar_bv_agresores()` normaliza columnas relevantes:
+  - estado
+  - municipio
+  - sexo
+  - edad
+  - escolaridad
+  - fecha de registro
+- Convierte flags de drogas/armas a variables numéricas cuando aplica.
+- Concatena los años 2020, 2021 y 2022 en `bv`.
+
+### 5) Consolidación interna del INE: `df_golden`
+
+- Agrupa por `Nombre` para generar un registro consolidado por persona dentro del INE.
+- `consolidar_persona()` separa:
+  - campos invariantes;
+  - campos por incidencia;
+  - derivados como `n_incidencias` y `es_reincidente`.
+
+Nota metodológica: `df_golden` se usa como registro maestro interno del INE, pero no como base principal para vincular con BANAVIM, porque BANAVIM no contiene nombre del agresor ni identificador común.
+
+### 6) Reparación de codificación en BANAVIM
+
+- Detecta problemas de mojibake en texto categórico.
+- Aplica reparación de codificación con `ftfy.fix_text`.
+- Produce `bv_fix`, versión corregida de BANAVIM.
+- Conserva `bv` como base previa para trazabilidad.
+
+### 7) Perfilado y preparación para fusión
+
+- Perfila campos categóricos candidatos:
+  - `sexo`
+  - `estado`
+  - `municipio`
+  - `vinculo_victima`
+- Crea bases canónicas:
+  - `ine_fusion`
+  - `bv_fusion`
+- Estas bases son versiones reducidas y normalizadas para comparación/fusión.
+- Conservan identificadores internos:
+  - `id_ine_caso`
+  - `id_bv_caso`
+
+### 8) Homologación semántica de `vinculo_victima`
+
+- Inicialmente se creó `vinculo_grupo` para auditar equivalencias semánticas entre INE y BANAVIM.
+- Se revisó que el campo `vinculo_victima` no significa exactamente lo mismo en ambas fuentes.
+- Para el matching definitivo se construyó después una variable operativa más estricta:
+  - `vinculo_match`
+  - `confianza_vinculo_match`
+
+### 9) Ajustes finales de catálogo
+
+- `limpiar_sexo_final()` homologa sexo a valores comparables.
+- `limpiar_estado_final()` corrige variantes residuales de entidad federativa y placeholders.
+- Se decidió no corregir municipios manualmente en esta etapa sin validación externa, por su alta granularidad.
+
+---
+
+## Estructura del notebook de fusión: `fusion_individuos.ipynb`
+
+### 1) Carga de bases canónicas
+
+Carga las bases ya generadas por el notebook principal:
+
+- `../Data/fusion_outputs/ine_fusion_2020_2022.csv`
+- `../Data/fusion_outputs/banavim_fusion_2020_2022.csv.gz`
+
+Estas son las entradas principales para la etapa de fusión/record linkage.
+
+### 2) Revisión de categorías de vínculo
+
+- Se auditan todos los valores originales de `vinculo_victima`.
+- Se revisa qué valores de INE y BANAVIM caen en cada grupo semántico.
+- Se decide no usar `vinculo_grupo` como variable definitiva de matching.
+
+### 3) Clasificación definitiva de vínculo para matching
+
+Se construyen directamente desde `vinculo_victima`:
+
+- `vinculo_match`
+- `confianza_vinculo_match`
+
+Niveles definidos:
+
+| Nivel | Uso |
+|---|---|
+| `ALTA` | Correspondencia semántica fuerte. |
+| `MEDIA` | Correspondencia residual o débil, útil para revisión. |
+| `NO_APTO` | Categorías no comparables o no informativas. |
+
+Categorías principales:
+
+| Fuente | Valor original | `vinculo_match` | Confianza |
+|---|---|---|---|
+| INE | `PARES` | `PARES` | ALTA |
+| BANAVIM | `COMPANERO A` | `PARES` | ALTA |
+| INE | `JERARQUICA`, `SUBORDINACION` | `JERARQUICA_SUBORDINACION` | ALTA |
+| BANAVIM | `JEFE A O PATRON A` | `JERARQUICA_SUBORDINACION` | ALTA |
+| INE/BANAVIM | `OTRO`, `OTRA`, `OTRA RELACION` | `OTRO_RESIDUAL` | MEDIA |
+| INE/BANAVIM | `NINGUNA`, `DESCONOCIDO` | `SIN_RELACION_IDENTIFICABLE` | MEDIA |
+
+Las demás categorías se marcan como `NO_APTO_MATCH`.
+
+### 4) Bases por nivel de confianza
+
+Se crean dos escenarios:
+
+| Escenario | Descripción |
+|---|---|
+| Alta confianza | Solo registros con vínculo de confianza alta. |
+| Alta + media confianza | Incluye confianza alta y media. |
+
+Bases generadas:
+
+- `ine_match_alta_export`
+- `bv_match_alta_export`
+- `ine_match_alta_media_export`
+- `bv_match_alta_media_export`
+
+En estas bases se elimina `vinculo_grupo`, porque ya no forma parte de la clasificación definitiva.
+
+### 5) Validación geográfica contra INEGI
+
+Antes del record linkage se valida el campo geográfico.
+
+Procedimiento:
+
+1. Reunir pares únicos `estado + municipio`.
+2. Validarlos contra el catálogo oficial de municipios de INEGI.
+3. Identificar municipios no encontrados.
+4. Revisar manualmente casos no encontrados.
+5. Aplicar únicamente correcciones justificadas.
+6. Revalidar después de las correcciones.
+7. Marcar la bandera `municipio_validado_inegi`.
+
+### 6) Correcciones geográficas manuales
+
+Se aplicaron solo correcciones con justificación clara:
+
+| Estado | Valor original | Valor corregido | Tipo |
+|---|---|---|---|
+| `CAMPECHE` | `CIUDAD DEL CARMEN` | `CARMEN` | Localidad/cabecera a municipio |
+| `CAMPECHE` | `SAN FRANCISCO DE CAMPECHE` | `CAMPECHE` | Localidad/cabecera a municipio |
+| `CAMPECHE` | `XPUJIL` | `CALAKMUL` | Localidad a municipio |
+| `COLIMA` | `CIUDAD DE ARMERIA` | `ARMERIA` | Localidad/cabecera a municipio |
+| `COLIMA` | `CIUDAD DE VILLA DE ALVAREZ` | `VILLA DE ALVAREZ` | Localidad/cabecera a municipio |
+| `NAYARIT` | `EL NAYAR` | `DEL NAYAR` | Variante a nombre oficial |
+
+Se conservaron sin cambios valores revisados que corresponden a municipios oficiales o no requerían corrección, como:
+
+- `CINTALAPA`
+- `MAGDALENA APASCO`
+- `SANTIAGO CHAZUMBA`
+- `SOLIDARIDAD`
+
+### 7) Bandera de calidad geográfica
+
+Se crea:
+
+- `municipio_validado_inegi`
+
+Esta bandera permite conservar registros no validados sin eliminarlos, pero distinguiendo su calidad geográfica para la interpretación del record linkage.
+
+Los municipios no validados se conservan en las bases generales; no se eliminan automáticamente.
+
+### 8) Record linkage exacto de alta confianza
+
+Se inicia con un escenario exacto y conservador.
+
+Campos comparados:
+
+- `estado_municipio`
+- `sexo`
+- `vinculo_match`
+
+El resultado se interpreta como pares candidatos, no como matches definitivos.
+
+Salida principal:
+
+- `matches_exactos_alta_rl`
+
+Este escenario produjo 8 pares candidatos de alta compatibilidad.
+
+### 9) Revisión manual de candidatos
+
+Los 8 pares candidatos se preparan para revisión manual, conservando:
+
+- identificadores de INE y BANAVIM;
+- columnas usadas en el matching;
+- fechas disponibles;
+- vínculo original;
+- municipio corregido y municipio original antes de corrección;
+- bandera de validación geográfica;
+- score o criterios de coincidencia;
+- campos de decisión manual.
+
+La revisión manual es necesaria porque la coincidencia exacta en campos disponibles no prueba por sí sola que ambos registros representen el mismo caso.
+
+---
+
+## Salidas generadas
+
+### Bases intermedias y canónicas
+
+- `../Data/ine_incidencias_2020_2022.csv`
+- `../Data/banavim_fix_2020_2022.csv`
+- `../Data/fusion_outputs/ine_fusion_2020_2022.csv`
+- `../Data/fusion_outputs/banavim_fusion_2020_2022.csv.gz`
+
+### Bases por confianza
+
+- `../Data/fusion_outputs/ine_match_alta_confianza_2020_2022.csv`
+- `../Data/fusion_outputs/banavim_match_alta_confianza_2020_2022.csv.gz`
+- `../Data/fusion_outputs/ine_match_alta_media_confianza_2020_2022.csv`
+- `../Data/fusion_outputs/banavim_match_alta_media_confianza_2020_2022.csv.gz`
+
+Los nombres exactos pueden variar si el notebook se ejecuta con nombres alternativos, pero deben conservar la lógica de fuente, escenario y etapa.
+
+---
+
+## Notas metodológicas y supuestos
+
+- La consolidación `df_golden` agrupa registros del INE por nombre; puede tener riesgo de homónimos.
+- La fusión INE--BANAVIM no se realiza a nivel identidad individual confirmada.
+- BANAVIM no contiene nombre del agresor ni identificador común con INE.
+- El record linkage produce pares candidatos compatibles, no matches definitivos.
+- El campo `vinculo_victima` fue reinterpretado mediante `vinculo_match` para evitar falsas equivalencias semánticas.
+- La validación geográfica se realizó contra INEGI para reducir errores en `estado + municipio`.
+- Los municipios no validados se conservan, pero se interpretan con menor confianza.
+- Las fechas disponibles pueden no referirse al mismo evento en ambas fuentes; por eso no se usan como condición dura inicial.
+- La revisión manual de candidatos es obligatoria antes de afirmar coincidencia de caso.
+
+---
+Documentación actualizada con la sesión de preparación de bases, validación geográfica y primer record linkage exacto.
