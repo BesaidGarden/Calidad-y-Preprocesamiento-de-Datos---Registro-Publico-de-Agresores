@@ -1,0 +1,7 @@
+﻿fuente,escenario,n_total,n_con_estado,pct_con_estado,n_con_municipio,pct_con_municipio,n_con_estado_municipio,pct_con_estado_municipio,n_con_sexo,pct_con_sexo,n_con_vinculo_match,pct_con_vinculo_match,n_apto_linkage,pct_apto_linkage,n_municipio_validado_inegi,pct_municipio_validado_inegi
+INE,BASE_COMPLETA,162,162,100.0,129,79.63,162,100.0,162,100.0,160,98.77,160,98.77,0,0.0
+BANAVIM,BASE_COMPLETA,806092,803077,99.63,806070,100.0,806070,100.0,663726,82.34,34989,4.34,34802,4.32,0,0.0
+INE,ALTA,98,98,100.0,98,100.0,98,100.0,98,100.0,98,100.0,98,100.0,0,0.0
+BANAVIM,ALTA,3824,3824,100.0,3824,100.0,3824,100.0,3824,100.0,3824,100.0,3824,100.0,0,0.0
+INE,ALTA_MEDIA,128,128,100.0,128,100.0,128,100.0,128,100.0,128,100.0,128,100.0,0,0.0
+BANAVIM,ALTA_MEDIA,34782,34782,100.0,34782,100.0,34782,100.0,34782,100.0,34782,100.0,34782,100.0,0,0.0

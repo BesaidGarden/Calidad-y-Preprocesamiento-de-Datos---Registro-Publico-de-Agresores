@@ -1,0 +1,3 @@
+﻿escenario,registros_ine_entrada,registros_banavim_entrada,pares_candidatos,casos_ine_con_candidatos,pares_con_municipio_validado_ambas_fuentes,interpretacion
+ALTA_EXACTO,98,3824,8,5,,Resultado principal: candidatos exactos con vínculo de alta confianza.
+ALTA_MEDIA_EXACTO,128,34782,1551,7,,Escenario ampliado de sensibilidad; no se interpreta como resultado principal.
