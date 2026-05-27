@@ -1,0 +1,11 @@
+﻿escenario,tipo,n
+ALTA,estado_municipio INE,40
+ALTA,estado_municipio BANAVIM,471
+ALTA,estado_municipio comunes,10
+ALTA,estado_municipio solo INE,30
+ALTA,estado_municipio solo BANAVIM,461
+ALTA_MEDIA,estado_municipio INE,59
+ALTA_MEDIA,estado_municipio BANAVIM,1116
+ALTA_MEDIA,estado_municipio comunes,34
+ALTA_MEDIA,estado_municipio solo INE,25
+ALTA_MEDIA,estado_municipio solo BANAVIM,1082
