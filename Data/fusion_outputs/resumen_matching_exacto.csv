@@ -1,0 +1,3 @@
+﻿escenario,registros_ine,registros_bv,pares_candidatos,casos_ine_con_candidato,pares_municipio_validado_ambas,interpretacion
+ALTA_EXACTO,98,3824,8,5,8,"Resultado principal: vínculo de alta confianza, coincidencia exacta."
+ALTA_MEDIA_EXACTO,128,34782,1551,7,1551,Escenario de sensibilidad; categorías OTRO y SIN_RELACION incluidas.
