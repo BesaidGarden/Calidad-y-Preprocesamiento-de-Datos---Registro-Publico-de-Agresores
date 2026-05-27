@@ -1,7 +1,5 @@
 # Calidad y Preprocesamiento de Datos - Registro Público de Agresores
 
----
-
 ## Objetivos
 Integrar y vincular los registros de agresores del INE y BANAVIM (2020–2022) mediante limpieza, consolidación por individuo (Golden Record) y dos
 estrategias de record linkage para producir:
