@@ -77,6 +77,6 @@ Los notebooks deben ejecutarse en orden: `perfilado.ipynb` → `limpieza.ipynb` 
 
 **Presentación del proyecto (Canva):** <https://canva.link/x925rvpj6h4dey7>
 
-**Reporte del proyecto:** <https://www.overleaf.com/project/6a1337b580bb716e3cdc5af5>
+**Reporte del proyecto:** <https://www.overleaf.com/read/qzbftfydjdvz#f856e6>
 
 --- 
