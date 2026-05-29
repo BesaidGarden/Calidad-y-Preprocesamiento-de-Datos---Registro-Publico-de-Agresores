@@ -68,6 +68,8 @@ estrategias de record linkage para producir:
 │       ├── resumen_matching_exacto.csv
 │       └── catalogo_inegi_municipios_usados.csv
 │
+│── Reporte.pdf - Reporte documentado del proyecto 
+│
 └── Terminos y Condiciones - BANAVIM/
 ```
 
